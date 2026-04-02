@@ -2,26 +2,39 @@
 
 import { useState } from "react";
 import { Bell, Menu, X } from "lucide-react";
-import { Gauge, Home, PieChart, Briefcase, Calendar, Settings, Power, BringToFront } from "lucide-react";
+import { LayoutDashboard, Store, Wallet, MessageSquare, Settings, Power, BringToFront } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import clsx from "clsx";
 
 const navItems = [
-  { icon: Gauge, href: "/", label: "Dashboard" },
-  { icon: Home, href: "/home", label: "Home" },
-  { icon: PieChart, href: "/analytics", label: "Analytics" },
-  { icon: Briefcase, href: "/wallet", label: "Wallet" },
-  { icon: Calendar, href: "/calendar", label: "Calendar" },
-  { icon: Settings, href: "/settings", label: "Settings" },
+  { icon: LayoutDashboard, href: "/", label: "Dashboard" },
+  { icon: Store,           href: "/marketplace", label: "Marketplace" },
+  { icon: Wallet,          href: "/portfolio", label: "Portfolio" },
+  { icon: MessageSquare,   href: "/messages", label: "Messages" },
+  { icon: Settings,        href: "/settings", label: "Settings" },
 ];
 
-export default function Header() {
+interface HeaderProps {
+  pageTitle?: string;
+}
+
+export default function Header({ pageTitle = "Dashboard" }: HeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const avatarSrc = user
+    ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email)}&backgroundColor=b6e3f4`
+    : "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest&backgroundColor=b6e3f4";
+
+  const displayName = (user as any)?.name ?? user?.email?.split("@")[0] ?? "Guest";
 
   return (
     <>
-      <header className="h-[72px] md:h-[104px] bg-white flex items-center justify-between px-5 md:px-10 border-b border-slate-100 z-30 shrink-0 relative">
+      <header className="h-[72px] md:h-[90px] bg-white flex items-center justify-between px-5 md:px-10 border-b border-slate-100 z-30 shrink-0 relative">
         {/* Left */}
         <div className="flex items-center gap-4">
           <button
@@ -31,30 +44,30 @@ export default function Header() {
           >
             <Menu size={24} />
           </button>
-          <h1 className="text-xl md:text-3xl font-bold text-slate-800 tracking-tight">Dashboard</h1>
+          <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 tracking-tight">{pageTitle}</h1>
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-4 md:gap-6 relative">
+        <div className="flex items-center gap-3 md:gap-5 relative">
           {/* Notification Bell */}
           <div className="relative">
             <button
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative text-slate-600 hover:text-[#8B5CF6] transition-colors p-1"
+              className="relative text-slate-600 hover:text-[#8B5CF6] transition-colors p-2 rounded-xl hover:bg-purple-50"
               aria-label="Notifications"
             >
               <Bell size={20} strokeWidth={2} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse" />
             </button>
 
-            {/* Notification Dropdown */}
             {notifOpen && (
-              <div className="absolute right-0 top-10 w-72 bg-white rounded-[24px] shadow-xl border border-slate-100 z-50 overflow-hidden">
-                <div className="p-4 border-b border-slate-100">
+              <div className="absolute right-0 top-12 w-80 bg-white rounded-[24px] shadow-xl border border-slate-100 z-50 overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                   <p className="font-bold text-slate-800 text-sm">Notifications</p>
+                  <span className="bg-[#8B5CF6] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">3 new</span>
                 </div>
                 {[
-                  { title: "New bid on House Andromeda", time: "2 min ago", color: "bg-purple-100 text-purple-600" },
+                  { title: "New bid on Villa Del Lago", time: "2 min ago", color: "bg-purple-100 text-purple-600" },
                   { title: "Roma Avenue price updated", time: "15 min ago", color: "bg-emerald-100 text-emerald-600" },
                   { title: "Weekly returns deposited", time: "1 hr ago", color: "bg-orange-100 text-orange-600" },
                 ].map((n, i) => (
@@ -78,16 +91,15 @@ export default function Header() {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center gap-3 cursor-pointer">
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden bg-slate-200 border-2 border-white shadow-sm shrink-0">
-              <img
-                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rowena&backgroundColor=b6e3f4"
-                alt="Rowena Ravenclaw"
-                className="object-cover w-full h-full"
-              />
+          <Link href="/settings" className="flex items-center gap-3 cursor-pointer group">
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden bg-slate-100 border-2 border-[#8B5CF6]/20 shrink-0 group-hover:border-[#8B5CF6]/50 transition-all">
+              <img src={avatarSrc} alt={displayName} className="object-cover w-full h-full" />
             </div>
-            <span className="font-medium text-slate-500 text-sm hidden sm:block whitespace-nowrap">Rowena Ravenclaw</span>
-          </div>
+            <div className="hidden sm:block">
+              <p className="font-semibold text-slate-700 text-sm leading-tight">{displayName}</p>
+              {user && <p className="text-slate-400 text-xs">{user.email}</p>}
+            </div>
+          </Link>
         </div>
       </header>
 
@@ -109,17 +121,28 @@ export default function Header() {
             <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
               <BringToFront size={20} className="text-[#8B5CF6]" />
             </div>
-            <span className="font-bold text-slate-800 text-lg">NFT Dash</span>
+            <span className="font-bold text-slate-800 text-lg">PropChain</span>
           </div>
           <button onClick={() => setDrawerOpen(false)} className="text-slate-400 hover:text-slate-700 p-1">
             <X size={22} />
           </button>
         </div>
 
+        {/* User summary in drawer */}
+        {user && (
+          <div className="flex items-center gap-3 mb-6 px-2 py-3 bg-purple-50 rounded-2xl">
+            <img src={avatarSrc} alt={displayName} className="w-10 h-10 rounded-full bg-slate-100" />
+            <div>
+              <p className="font-bold text-slate-800 text-sm">{displayName}</p>
+              <p className="text-slate-400 text-xs">{user.email}</p>
+            </div>
+          </div>
+        )}
+
         <nav className="flex flex-col gap-2 flex-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.href === "/";
+            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
@@ -127,9 +150,7 @@ export default function Header() {
                 onClick={() => setDrawerOpen(false)}
                 className={clsx(
                   "flex items-center gap-4 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all",
-                  isActive
-                    ? "bg-[#8B5CF6]/10 text-[#8B5CF6]"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  isActive ? "bg-[#8B5CF6]/10 text-[#8B5CF6]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                 )}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
@@ -139,7 +160,10 @@ export default function Header() {
           })}
         </nav>
 
-        <button className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 font-semibold text-sm transition-all">
+        <button
+          onClick={logout}
+          className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 font-semibold text-sm transition-all"
+        >
           <Power size={20} />
           Logout
         </button>

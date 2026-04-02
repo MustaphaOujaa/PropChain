@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Real Estate NFT Dashboard",
-  description: "A pixel-perfect modern Real Estate NFT Dashboard",
+  title: "PropChain — Real Estate NFT Dashboard",
+  description: "A modern Web3 Real Estate NFT Dashboard with blockchain-powered property investments.",
 };
 
 export default function RootLayout({
@@ -28,7 +29,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="text-slate-800 bg-[#F8F9FB] antialiased">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

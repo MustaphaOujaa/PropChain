@@ -1,20 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Target, Calendar, CreditCard } from "lucide-react";
+import api from "@/lib/api";
 
 const periods = ["Daily", "Weekly", "Monthly"];
 
-const data: Record<string, { investment: string; returns: string; expenses: string; bars: number[] }> = {
-  Daily:   { investment: "0.12 Ether", returns: "0.001 Ether", expenses: "0.002 Ether", bars: [30, 55, 40, 65] },
-  Weekly:  { investment: "0.56 Ether", returns: "0.005 Ether", expenses: "0.005 Ether", bars: [40, 85, 60, 75] },
-  Monthly: { investment: "2.30 Ether", returns: "0.024 Ether", expenses: "0.018 Ether", bars: [60, 100, 75, 90] },
-};
+interface PortfolioData {
+  investment: string;
+  returns: string;
+  expenses: string;
+  bars: number[];
+  totalBalance: number;
+}
 
 export default function InvestmentStats() {
   const [period, setPeriod] = useState("Weekly");
   const [menuOpen, setMenuOpen] = useState(false);
-  const d = data[period];
+  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const { data } = await api.get('/user/portfolio');
+        setPortfolioData(data.defaultData);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    }
+    fetchStats();
+  }, []);
+
+  const d = portfolioData || {
+    investment: "0 Ether",
+    returns: "0 Ether",
+    expenses: "0 Ether",
+    bars: [0, 0, 0, 0],
+  };
 
   return (
     <div className="w-full h-full flex flex-col gap-5">
@@ -37,7 +59,7 @@ export default function InvestmentStats() {
                     onClick={() => { setPeriod(p); setMenuOpen(false); }}
                     className={`w-full text-left px-4 py-3 text-sm font-semibold transition-colors ${
                       period === p
-                        ? "text-[#8B5CF6] bg-purple-50"
+                        ? "text-[#8A74F9] bg-[#8A74F9]/10"
                         : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -50,8 +72,7 @@ export default function InvestmentStats() {
         </div>
       </div>
 
-      <div className="bg-white rounded-[32px] p-6 sm:p-8 flex-1 min-h-[280px] sm:min-h-[360px] shadow-sm flex flex-col relative overflow-hidden">
-        {/* Period Pills */}
+      <div className="bg-white rounded-[32px] p-6 sm:p-8 flex-1 min-h-[280px] sm:min-h-[360px] shadow-sm flex flex-col relative overflow-hidden transition-all duration-300">
         <div className="flex gap-2 mb-6">
           {periods.map((p) => (
             <button
@@ -59,7 +80,7 @@ export default function InvestmentStats() {
               onClick={() => setPeriod(p)}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                 period === p
-                  ? "bg-[#8B5CF6] text-white shadow-sm"
+                  ? "bg-[#8A74F9] text-white shadow-sm"
                   : "bg-slate-100 text-slate-500 hover:bg-slate-200"
               }`}
             >
@@ -72,8 +93,8 @@ export default function InvestmentStats() {
           {/* Stats */}
           <div className="flex flex-col gap-6 justify-center w-[55%]">
             {[
-              { Icon: Target, color: "bg-orange-100/50 text-orange-500", label: "Total Investement", value: d.investment, textColor: "text-orange-500" },
-              { Icon: Calendar, color: "bg-emerald-100/50 text-emerald-500", label: "Weekly Returns", value: d.returns, textColor: "text-emerald-500" },
+              { Icon: Target, color: "bg-[#8A74F9]/10 text-[#8A74F9]", label: "Total Investment", value: d.investment, textColor: "text-[#8A74F9]" },
+              { Icon: Calendar, color: "bg-[#00D3A2]/10 text-[#00D3A2]", label: `${period} Returns`, value: d.returns, textColor: "text-[#00D3A2]" },
               { Icon: CreditCard, color: "bg-rose-100/50 text-rose-500", label: "Expenses", value: d.expenses, textColor: "text-rose-500" },
             ].map(({ Icon, color, label, value, textColor }) => (
               <div key={label} className="flex items-center gap-4">
@@ -93,7 +114,6 @@ export default function InvestmentStats() {
             ))}
           </div>
 
-          {/* Bar Chart */}
           <div className="w-[45%] flex flex-col justify-between items-end relative h-full py-2">
             <span className="text-[11px] font-medium text-slate-400 absolute top-0 -right-2">Max</span>
             <div className="absolute inset-x-0 top-3 h-[1px] bg-slate-100 w-full" />
@@ -104,7 +124,7 @@ export default function InvestmentStats() {
                   key={i}
                   style={{ height: `${h}%` }}
                   className={`w-3.5 rounded-full shrink-0 transition-all duration-500 ${
-                    [" bg-orange-400", "bg-emerald-400", "bg-rose-400", "bg-emerald-400"][i]
+                    ["bg-[#8A74F9]", "bg-[#00D3A2]", "bg-[#8A74F9]", "bg-[#00D3A2]"][i]
                   }`}
                 />
               ))}

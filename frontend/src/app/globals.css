@@ -1,14 +1,19 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark, .dark *));
+
 :root {
   --background: #F8F9FB;
   --foreground: #111827;
+  --purple: #8A74F9;
+  --mint: #00D3A2;
+  --sidebar: #1E293B;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), "Inter", sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -19,10 +24,11 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Hide scrollbar but keep functionality */
+/* ── Scrollbars ───────────────────────────────────── */
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -31,23 +37,18 @@ body {
   display: none;
 }
 
-/* Thin styled scrollbar for overflow panels */
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: #e2e8f0 transparent;
 }
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-}
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
+.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: #e2e8f0;
   border-radius: 999px;
 }
 
-/* Slide-in animation for toasts */
+/* ── Animations ───────────────────────────────────── */
 @keyframes slide-in-from-right {
   from { transform: translateX(100%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
@@ -55,3 +56,15 @@ body {
 .animate-in.slide-in-from-right {
   animation: slide-in-from-right 0.25s ease-out forwards;
 }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.animate-fade-up { animation: fade-up 0.35s ease both; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.2s ease both; }

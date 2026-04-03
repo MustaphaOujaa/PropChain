@@ -1,384 +1,297 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { propertyApi, userApi, Property } from "@/lib/api";
+import api, { propertyApi, Property } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import {
-  Search, SlidersHorizontal, Bed, Bath, Maximize2,
-  MapPin, TrendingUp, Star, ShoppingCart, X, CheckCircle,
-  AlertCircle, Crown, Building2, Home, Landmark, Store,
-} from "lucide-react";
+import { Search, Loader2, X, Wallet, ShieldCheck, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePreferences } from "@/context/PreferencesContext";
+import { toast } from "sonner";
 import clsx from "clsx";
 
-// ── Category Config ───────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { label: "All", value: "", icon: Store },
-  { label: "Mansion", value: "Mansion", icon: Crown },
-  { label: "Villa", value: "Villa", icon: Home },
-  { label: "Apartment", value: "Apartment", icon: Building2 },
-  { label: "Commercial", value: "Commercial", icon: Landmark },
-  { label: "Penthouse", value: "Penthouse", icon: Star },
-];
-
-// ── Category Colors ───────────────────────────────────────────────────────────
-const CATEGORY_COLOR: Record<string, string> = {
-  Mansion: "bg-purple-100 text-purple-700",
-  Villa: "bg-emerald-100 text-emerald-700",
-  Apartment: "bg-blue-100 text-blue-700",
-  Commercial: "bg-orange-100 text-orange-700",
-  Penthouse: "bg-rose-100 text-rose-700",
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
 };
 
-function formatUSD(n: number) {
-  return n >= 1_000_000
-    ? `$${(n / 1_000_000).toFixed(2)}M`
-    : `$${(n / 1_000).toFixed(0)}K`;
-}
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
-// ── Property Card ─────────────────────────────────────────────────────────────
-function PropertyCard({
-  property,
-  onBuy,
-  buying,
-}: {
-  property: Property;
-  onBuy: (p: Property) => void;
-  buying: boolean;
-}) {
-  const categoryColor = CATEGORY_COLOR[property.category] ?? "bg-slate-100 text-slate-600";
-  const isAvailable = property.status === "Market";
-
-  return (
-    <article className="bg-white rounded-[24px] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col border border-slate-100 hover:-translate-y-1">
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden bg-slate-100">
-        <img
-          src={property.imageUrl}
-          alt={property.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
-        {/* Status Badge */}
-        <div className={clsx(
-          "absolute top-3 right-3 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide",
-          isAvailable ? "bg-emerald-500 text-white" :
-          property.status === "Pending" ? "bg-amber-400 text-white" : "bg-slate-400 text-white"
-        )}>
-          {property.status}
-        </div>
-        {property.isTopPick && (
-          <div className="absolute top-3 left-3 bg-[#8B5CF6] text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1">
-            <Star size={10} fill="white" /> Top Pick
-          </div>
-        )}
-        {/* ROI Overlay */}
-        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-[12px] font-bold flex items-center gap-1">
-          <TrendingUp size={11} /> {property.roi}% ROI
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-5 flex flex-col flex-1 gap-3">
-        {/* Category + Location */}
-        <div className="flex items-center justify-between">
-          <span className={clsx("text-[11px] font-bold px-2.5 py-1 rounded-full", categoryColor)}>
-            {property.category}
-          </span>
-          <span className="text-slate-400 text-[12px] flex items-center gap-1">
-            <MapPin size={11} /> {property.location}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h3 className="font-bold text-slate-800 text-[17px] leading-tight">{property.title}</h3>
-
-        {/* Specs */}
-        <div className="flex items-center gap-4 text-slate-400 text-[12px]">
-          {property.beds > 0 && (
-            <span className="flex items-center gap-1 font-medium">
-              <Bed size={13} /> {property.beds} Beds
-            </span>
-          )}
-          {property.baths > 0 && (
-            <span className="flex items-center gap-1 font-medium">
-              <Bath size={13} /> {property.baths} Bath
-            </span>
-          )}
-          <span className="flex items-center gap-1 font-medium">
-            <Maximize2 size={13} /> {property.sqft.toLocaleString()} sqft
-          </span>
-        </div>
-
-        {/* Price */}
-        <div className="flex items-end justify-between mt-auto pt-3 border-t border-slate-100">
-          <div>
-            <p className="text-[11px] text-slate-400 font-medium">Price</p>
-            <p className="text-[22px] font-extrabold text-slate-800 leading-tight">
-              {formatUSD(property.priceUSD)}
-            </p>
-            <p className="text-[12px] text-slate-400 font-medium">{property.priceETH.toFixed(2)} ETH</p>
-          </div>
-
-          <button
-            id={`buy-${property._id}`}
-            disabled={!isAvailable || buying}
-            onClick={() => onBuy(property)}
-            className={clsx(
-              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all duration-200",
-              isAvailable
-                ? "bg-[#8B5CF6] text-white hover:bg-[#7C3AED] shadow-lg shadow-[#8B5CF6]/25 hover:shadow-[#8B5CF6]/40 active:scale-95"
-                : "bg-slate-100 text-slate-400 cursor-not-allowed"
-            )}
-          >
-            <ShoppingCart size={15} />
-            {isAvailable ? "Buy Now" : property.status}
-          </button>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-// ── Top Picks Section ─────────────────────────────────────────────────────────
-function TopPicksBar({ picks, onBuy, buying }: { picks: Property[]; onBuy: (p: Property) => void; buying: boolean }) {
-  return (
-    <div className="bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] rounded-[28px] p-6 mb-8 text-white overflow-hidden relative">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-
-      <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-1">
-          <Star size={18} fill="white" />
-          <h2 className="text-xl font-extrabold tracking-tight">Top Picks for You</h2>
-        </div>
-        <p className="text-white/60 text-sm mb-6">Hand-curated high-ROI properties from our analysts</p>
-
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
-          {picks.map((p) => (
-            <div
-              key={p._id}
-              className="flex-shrink-0 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 w-56 hover:bg-white/20 transition-all"
-            >
-              <img
-                src={p.imageUrl}
-                alt={p.title}
-                className="w-full h-28 object-cover rounded-xl mb-3"
-              />
-              <p className="font-bold text-white text-sm leading-tight mb-1">{p.title}</p>
-              <p className="text-white/60 text-[11px] flex items-center gap-1 mb-3">
-                <MapPin size={10} /> {p.location}
-              </p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white text-base font-extrabold">{formatUSD(p.priceUSD)}</p>
-                  <p className="text-emerald-300 text-[11px] font-bold flex items-center gap-0.5">
-                    <TrendingUp size={10} /> {p.roi}% ROI
-                  </p>
-                </div>
-                <button
-                  disabled={buying}
-                  onClick={() => onBuy(p)}
-                  id={`top-buy-${p._id}`}
-                  className="bg-white text-[#8B5CF6] text-[11px] font-extrabold px-3 py-1.5 rounded-xl hover:bg-white/90 transition-colors active:scale-95"
-                >
-                  Buy
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000);
-    return () => clearTimeout(t);
-  }, [onClose]);
-
-  return (
-    <div className={clsx(
-      "fixed bottom-24 md:bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm font-semibold animate-in slide-in-from-right",
-      type === "success" ? "bg-emerald-500" : "bg-rose-500"
-    )}>
-      {type === "success" ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X size={16} /></button>
-    </div>
-  );
-}
-
-// ── Marketplace Page ──────────────────────────────────────────────────────────
 export default function MarketplacePage() {
-  const { user } = useAuth();
+  const { t } = usePreferences();
   const [properties, setProperties] = useState<Property[]>([]);
-  const [topPicks, setTopPicks] = useState<Property[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState<string | null>(null);
+  const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
-  const [sortBy, setSortBy] = useState<"priceAsc" | "priceDesc" | "roi" | "newest">("newest");
-  const [buying, setBuying] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const { user, updateUser } = useAuth();
+  const [selectedProp, setSelectedProp] = useState<Property | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const fetchProperties = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [propsRes, topRes] = await Promise.all([
-        propertyApi.getAll({ category: category || undefined, search: search || undefined }),
-        propertyApi.getTopPicks(),
-      ]);
-      setProperties(propsRes.data);
-      setTopPicks(topRes.data);
-    } catch {
-      setToast({ message: "Failed to load properties. Is the backend running?", type: "error" });
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    async function fetchListings() {
+      try {
+        setLoading(true);
+        const res = await propertyApi.getAll({
+          status: "Market",
+          category: category !== "All" ? category : undefined,
+          search: search || undefined,
+        });
+        setProperties(res.data);
+      } catch (error) {
+        console.error("Failed to load marketplace:", error);
+      } finally {
+        setLoading(false);
+      }
     }
+    fetchListings();
   }, [category, search]);
 
-  useEffect(() => {
-    const timer = setTimeout(fetchProperties, 300);
-    return () => clearTimeout(timer);
-  }, [fetchProperties]);
-
-  const handleBuy = async (p: Property) => {
-    if (!user) {
-      setToast({ message: "Please log in to purchase properties.", type: "error" });
-      return;
-    }
-    setBuying(true);
+  const handlePurchase = async () => {
+    if (!selectedProp) return;
     try {
-      await userApi.purchase(p._id);
-      setToast({ message: `🎉 Successfully purchased "${p.title}"!`, type: "success" });
-      fetchProperties();
-    } catch (err: any) {
-      setToast({ message: err?.response?.data?.message ?? "Purchase failed.", type: "error" });
+      setBuying(selectedProp._id);
+      const res = await api.post("/user/purchase", { propertyId: selectedProp._id });
+      updateUser({ walletBalance: res.data.walletBalance });
+      setProperties((prev) => prev.filter((p) => p._id !== selectedProp._id));
+      toast.success(`${t("successfully_purchased" as any)} ${selectedProp.title}!`);
+      setConfirmOpen(false);
+      setSelectedProp(null);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || t("purchase_failed" as any));
     } finally {
-      setBuying(false);
+      setBuying(null);
     }
   };
 
-  // Client-side sort
-  const sorted = [...properties].sort((a, b) => {
-    if (sortBy === "priceAsc") return a.priceUSD - b.priceUSD;
-    if (sortBy === "priceDesc") return b.priceUSD - a.priceUSD;
-    if (sortBy === "roi") return b.roi - a.roi;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
   return (
-    <DashboardLayout pageTitle="Marketplace">
-      <div className="pb-20 md:pb-0 max-w-[1400px] mx-auto">
+    <DashboardLayout pageTitle={t("marketplace")}>
+      <div className="flex flex-col gap-6 h-full pb-10">
+        
+        {/* Filters & Search */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-slate-800 p-5 rounded-[24px] shadow-sm transition-colors border border-slate-100 dark:border-slate-700">
+          <div className="flex flex-wrap gap-2">
+            {["All", "Mansion", "Villa", "Apartment", "Commercial"].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                  category === cat
+                    ? "bg-[#8A74F9] text-white shadow-md shadow-[#8A74F9]/30"
+                    : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
+                }`}
+              >
+                {t(cat.toLowerCase() as any)}
+              </button>
+            ))}
+          </div>
 
-        {/* Top Picks */}
-        {topPicks.length > 0 && (
-          <TopPicksBar picks={topPicks} onBuy={handleBuy} buying={buying} />
-        )}
-
-        {/* Filters Bar */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative w-full lg:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
-              id="marketplace-search"
               type="text"
-              placeholder="Search properties…"
+              placeholder={t("search_properties")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-full py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-[#8A74F9]/50 transition-all placeholder:text-slate-400"
             />
           </div>
-
-          {/* Sort */}
-          <div className="relative">
-            <SlidersHorizontal size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <select
-              id="marketplace-sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="appearance-none pl-11 pr-6 py-3 rounded-2xl border border-slate-200 bg-white text-sm text-slate-700 font-medium outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/20 transition-all cursor-pointer"
-            >
-              <option value="newest">Newest First</option>
-              <option value="roi">Highest ROI</option>
-              <option value="priceAsc">Price: Low → High</option>
-              <option value="priceDesc">Price: High → Low</option>
-            </select>
-          </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
-          {CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.value}
-                id={`cat-${cat.value || "all"}`}
-                onClick={() => setCategory(cat.value)}
-                className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0",
-                  category === cat.value
-                    ? "bg-[#8B5CF6] text-white shadow-lg shadow-[#8B5CF6]/25"
-                    : "bg-white text-slate-500 hover:bg-slate-100 border border-slate-200"
-                )}
-              >
-                <Icon size={15} />
-                {cat.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Results Header */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-slate-500 text-sm font-medium">
-            {isLoading ? "Loading…" : `${sorted.length} propert${sorted.length === 1 ? "y" : "ies"} found`}
-          </p>
-          {category && (
-            <button
-              onClick={() => setCategory("")}
-              className="text-[#8B5CF6] text-sm font-semibold flex items-center gap-1 hover:text-[#7C3AED]"
+        {/* Listings Grid */}
+        <div className="flex-1">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="bg-white dark:bg-slate-800 rounded-[24px] p-4 flex flex-col gap-4 animate-pulse">
+                  <div className="w-full aspect-[4/3] bg-slate-200 dark:bg-slate-700 rounded-2xl" />
+                  <div className="flex flex-col gap-2">
+                    <div className="h-5 bg-slate-200 rounded-full w-3/4" />
+                    <div className="h-4 bg-slate-200 rounded-full w-1/2" />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between">
+                    <div className="h-4 bg-slate-200 rounded-full w-1/3" />
+                    <div className="h-4 bg-slate-200 rounded-full w-1/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : properties.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center h-full min-h-[400px] text-center bg-white dark:bg-slate-800 rounded-[32px] shadow-sm transition-colors border border-slate-100 dark:border-slate-700"
             >
-              <X size={14} /> Clear filter
-            </button>
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">No properties found</h3>
+              <p className="text-sm font-medium text-slate-400">Try adjusting your filters or search term.</p>
+            </motion.div>
+          ) : (
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              {properties.map((p) => (
+                <motion.div
+                  key={p._id}
+                  variants={itemVariants}
+                  className="bg-white rounded-[24px] p-4 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow group border border-slate-50"
+                >
+                  <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
+                    <img
+                      src={p.imageUrl}
+                      alt={p.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute top-3 left-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm">
+                      {t(p.category.toLowerCase() as any)}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1 px-1">
+                    <h3 className="font-bold text-slate-800 dark:text-white text-lg tracking-tight line-clamp-1">{p.title}</h3>
+                    <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">{p.location}</p>
+                  </div>
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-slate-400">Price</span>
+                      <span className="font-bold text-[#8A74F9]">{p.priceETH} ETH</span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs font-medium text-slate-400">Expected ROI</span>
+                      <span className={`font-bold ${p.roi > 0 ? "text-[#00D3A2]" : "text-rose-500"}`}>
+                        {p.roi > 0 ? "+" : ""}{p.roi}%
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    disabled={buying === p._id}
+                    onClick={() => {
+                      setSelectedProp(p);
+                      setConfirmOpen(true);
+                    }}
+                    className="w-full mt-2 bg-slate-900 dark:bg-[#8A74F9] hover:bg-[#8A74F9] dark:hover:bg-[#7864dd] text-white font-bold py-3.5 rounded-2xl transition-colors duration-300 flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {t("purchase_nft")}
+                  </button>
+                </motion.div>
+              ))}
+            </motion.div>
           )}
         </div>
-
-        {/* Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-[24px] h-96 animate-pulse border border-slate-100" />
-            ))}
-          </div>
-        ) : sorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <Store size={32} className="text-slate-300" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-700 mb-2">No properties found</h3>
-            <p className="text-slate-400 text-sm max-w-xs">
-              Try a different search term or category. Make sure the backend is seeded.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sorted.map((p) => (
-              <PropertyCard key={p._id} property={p} onBuy={handleBuy} buying={buying} />
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Toast */}
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
-    </DashboardLayout>
-  );
+      {/* ── PURCHASE CONFIRMATION MODAL ──────────────────────────────── */}
+      <AnimatePresence>
+        {confirmOpen && selectedProp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700 transition-colors"
+            >
+              <div className="p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">{t("confirm_payment")}</h3>
+                    <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">{t("review_order_desc" as any)}</p>
+                  </div>
+                  <button onClick={() => setConfirmOpen(false)} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl p-5 mb-8 border border-slate-100 dark:border-slate-700 flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-sm">
+                    <img src={selectedProp.imageUrl} alt={selectedProp.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-800 dark:text-white text-base leading-tight">{selectedProp.title}</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">{selectedProp.location}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-extrabold text-[#8A74F9] text-base">{selectedProp.priceETH} ETH</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-[11px] font-bold">${selectedProp.priceUSD.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">{t("wallet_balance")}</span>
+                    <span className="font-bold text-slate-800 dark:text-white">${user?.walletBalance?.toLocaleString() ?? "0"}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">{t("item_price" as any)}</span>
+                    <span className="font-bold text-rose-500">-${selectedProp.priceUSD.toLocaleString()}</span>
+                  </div>
+                  <div className="h-[1px] bg-slate-100 dark:bg-slate-700 w-full" />
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-slate-800 dark:text-white">{t("remaining" as any)}</span>
+                    <span className={clsx(
+                      "font-extrabold text-lg",
+                      (user?.walletBalance ?? 0) >= selectedProp.priceUSD ? "text-[#00D3A2]" : "text-rose-500"
+                    )}>
+                      ${((user?.walletBalance ?? 0) - selectedProp.priceUSD).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Insufficient Funds Warning */}
+                {(user?.walletBalance ?? 0) < selectedProp.priceUSD && (
+                   <div className="bg-rose-50 dark:bg-rose-500/10 p-4 rounded-2xl mb-8 flex gap-3 items-center border border-rose-100 dark:border-rose-500/20">
+                     <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0">
+                       <Wallet size={14} className="text-rose-600" />
+                     </div>
+                     <p className="text-[13px] font-bold text-rose-600 dark:text-rose-400">{t("insufficient_funds")}</p>
+                     <a href="/settings" className="ml-auto text-[11px] font-bold underline text-rose-600 uppercase tracking-tighter">Top Up</a>
+                   </div>
+                )}
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setConfirmOpen(false)}
+                    className="flex-1 py-4 px-6 rounded-2xl bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-200 font-bold hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    {t("cancel")}
+                  </button>
+                  <button
+                    disabled={buying === selectedProp._id || (user?.walletBalance ?? 0) < selectedProp.priceUSD}
+                    onClick={handlePurchase}
+                    className="flex-[2] py-4 px-6 rounded-2xl bg-[#8A74F9] text-white font-bold hover:bg-[#7864dd] transition-all shadow-xl shadow-[#8A74F9]/30 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:grayscale"
+                  >
+                    {buying === selectedProp._id ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      <>
+                        <ShieldCheck size={20} />
+                        {t("buy_now")}
+                        <ArrowRight size={18} className="translate-x-0 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        </AnimatePresence>
+      </DashboardLayout>
+    );
 }

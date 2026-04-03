@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { usePreferences } from "@/context/PreferencesContext";
 
 export default function MyPortfolio() {
+  const { t } = usePreferences();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -32,12 +34,12 @@ export default function MyPortfolio() {
     <div className="w-full h-full flex flex-col gap-5 overflow-hidden">
       {/* Header */}
       <div className="flex justify-between items-center px-1">
-        <h2 className="text-xl font-bold text-slate-800 tracking-tight">My Portfolio</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight transition-colors">{t("my_portfolio" as any)}</h2>
         <div className="flex gap-2.5">
           <button
             onClick={() => scroll("left")}
             disabled={!canScrollLeft}
-            className="w-8 h-8 rounded-full bg-white text-slate-400 hover:text-slate-800 flex items-center justify-center shadow-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center shadow-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-transparent dark:border-slate-700"
           >
             <ChevronLeft size={18} />
           </button>
@@ -60,16 +62,16 @@ export default function MyPortfolio() {
         {portfolio.map((item, idx) => (
           <div
             key={idx}
-            className="bg-white rounded-[24px] p-5 shadow-sm flex items-center min-w-[290px] gap-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+            className="bg-white dark:bg-slate-800 rounded-[24px] p-5 shadow-sm flex items-center min-w-[290px] gap-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-transparent dark:border-slate-700/50"
           >
             <img src={item.image} alt={item.name} className="w-16 h-16 rounded-[16px] object-cover" />
             <div className="flex flex-col gap-1.5">
-              <span className="text-[15px] font-bold text-slate-800 truncate block w-36 tracking-tight">{item.name}</span>
+              <span className="text-[15px] font-bold text-slate-800 dark:text-white truncate block w-36 tracking-tight">{item.name}</span>
               <span className="text-slate-500 font-medium text-[13px] flex items-center gap-1.5">
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-slate-400">
                   <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"/>
                 </svg>
-                {item.price}
+                <span className="text-slate-500 dark:text-slate-400">{item.price}</span>
               </span>
             </div>
           </div>

@@ -143,7 +143,7 @@ export default function SignupPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E1B4B] to-[#312E81]" />
 
         {/* Orbs */}
-        <div className="absolute top-[-100px] right-[-80px] w-[420px] h-[420px] rounded-full bg-[#8B5CF6]/20 blur-3xl" />
+        <div className="absolute top-[-100px] right-[-80px] w-[420px] h-[420px] rounded-full bg-[#8A74F9]/20 blur-3xl" />
         <div className="absolute bottom-[-80px] left-[-60px] w-80 h-80 rounded-full bg-[#6D28D9]/30 blur-3xl" />
         <div className="absolute top-[40%] right-[30%] w-64 h-64 rounded-full bg-[#A78BFA]/10 blur-2xl" />
 
@@ -190,7 +190,7 @@ export default function SignupPage() {
                 "Verified & insured properties",
               ].map((b) => (
                 <li key={b} className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-xl bg-[#8B5CF6]/30 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-xl bg-[#8A74F9]/30 flex items-center justify-center shrink-0">
                     <Check size={13} className="text-[#A78BFA]" />
                   </div>
                   <span className="text-white/70 text-sm">{b}</span>
@@ -229,7 +229,7 @@ export default function SignupPage() {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 xl:hidden">
-            <div className="w-9 h-9 rounded-xl bg-[#8B5CF6] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-[#8A74F9] flex items-center justify-center">
               <EtherIcon className="w-4 h-4 text-white" />
             </div>
             <span className="text-slate-800 font-bold text-lg tracking-tight">PropChain</span>
@@ -411,8 +411,8 @@ export default function SignupPage() {
                 <div
                   className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${
                     agreed
-                      ? "bg-[#8B5CF6] border-[#8B5CF6]"
-                      : "border-slate-300 bg-white hover:border-[#8B5CF6]"
+                      ? "bg-[#8A74F9] border-[#8A74F9]"
+                      : "border-slate-300 bg-white hover:border-[#8A74F9]"
                   }`}
                 >
                   {agreed && <Check size={12} className="text-white" strokeWidth={3} />}
@@ -420,11 +420,11 @@ export default function SignupPage() {
               </div>
               <span className="text-sm text-slate-600 leading-snug">
                 I agree to PropChain&apos;s{" "}
-                <Link href="/terms" className="text-[#8B5CF6] font-semibold hover:underline">
+                <Link href="/terms" className="text-[#8A74F9] font-semibold hover:underline">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-[#8B5CF6] font-semibold hover:underline">
+                <Link href="/privacy" className="text-[#8A74F9] font-semibold hover:underline">
                   Privacy Policy
                 </Link>
               </span>
@@ -446,7 +446,7 @@ export default function SignupPage() {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-[#8B5CF6] font-semibold hover:text-[#7C3AED] transition-colors"
+              className="text-[#8A74F9] font-semibold hover:text-[#7864dd] transition-colors"
             >
               Sign in
             </Link>

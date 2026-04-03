@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PropChain – Real Estate NFT Dashboard</title>
+  <meta name="description" content="Real Estate NFT Investment Dashboard – track your NFT property portfolio, marketplace listings, and investment stats in one place." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #7C3AED;
+      --purple-light: #8B5CF6;
+      --purple-lighter: #EDE9FE;
+      --purple-dark: #5B21B6;
+      --orange: #F59E0B;
+      --orange-light: #FEF3C7;
+      --green: #10B981;
+      --green-light: #D1FAE5;
+      --red: #EF4444;
+      --red-light: #FEE2E2;
+      --bg: #F3F4F9;
+      --card: #FFFFFF;
+      --sidebar-bg: #1E1B4B;
+      --sidebar-icon: #6D6A9C;
+      --sidebar-active: #7C3AED;
+      --text-primary: #1E1B4B;
+      --text-secondary: #6B7280;
+      --text-muted: #9CA3AF;
+      --border: #E5E7EB;
+      --shadow: 0 4px 24px rgba(124,58,237,0.08);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 64px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .sidebar-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--purple-light), var(--purple-dark));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .sidebar-logo:hover { transform: scale(1.08); }
+    .sidebar-logo svg { width: 20px; height: 20px; fill: white; }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .nav-item {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      position: relative;
+    }
+    .nav-item:hover { background: rgba(124,58,237,0.18); transform: scale(1.06); }
+    .nav-item.active { background: var(--purple); }
+    .nav-item svg { width: 20px; height: 20px; stroke: var(--sidebar-icon); stroke-width: 1.7; fill: none; transition: stroke 0.2s; }
+    .nav-item.active svg, .nav-item:hover svg { stroke: #fff; }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding-top: 12px;
+    }
+    .nav-item.power svg { stroke: #EF4444; }
+    .nav-item.power:hover { background: rgba(239,68,68,0.15); }
+    .nav-item.power:hover svg { stroke: #EF4444; }
+
+    /* ─── MAIN ─── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .bell-btn {
+      width: 38px; height: 38px;
+      background: var(--bg);
+      border: none;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+    .bell-btn:hover { background: var(--purple-lighter); }
+    .bell-btn svg { width: 18px; height: 18px; stroke: var(--text-secondary); fill: none; stroke-width: 1.8; }
+    .notif-dot {
+      position: absolute;
+      top: 8px; right: 9px;
+      width: 7px; height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      border: 1.5px solid white;
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #A78BFA, #7C3AED);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: white;
+      overflow: hidden;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .user-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+
+    /* CONTENT AREA */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .content::-webkit-scrollbar { width: 5px; }
+    .content::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb { background: var(--purple-lighter); border-radius: 10px; }
+
+    /* GRID ROWS */
+    .row { display: grid; gap: 16px; }
+    .row-top { grid-template-columns: 1.2fr 1.1fr 0.9fr; }
+    .row-mid { grid-template-columns: 0.85fr 1.15fr 0.9fr; }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .card-title { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+    .dots-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; letter-spacing: 1px; }
+
+    /* ─── NFT MARKETPLACE CARD ─── */
+    .nft-marketplace {}
+    .nft-img-wrap {
+      position: relative;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      height: 148px;
+      background: linear-gradient(135deg, #ddd8f5 0%, #b8a9f5 100%);
+    }
+    .nft-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s;
+    }
+    .nft-img-wrap:hover img { transform: scale(1.04); }
+    .nft-badges {
+      position: absolute;
+      top: 10px; left: 10px;
+      display: flex; gap: 6px;
+    }
+    .badge {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(4px);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .badge.featured { background: rgba(124,58,237,0.85); color: white; }
+    .nft-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 10px 12px 10px;
+      background: linear-gradient(to top, rgba(16,10,40,0.75) 0%, transparent 100%);
+      display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .nft-name { font-size: 0.88rem; font-weight: 700; color: white; }
+    .nft-price-row {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; color: rgba(255,255,255,0.9); margin-top: 3px;
+    }
+    .eth-icon { font-size: 0.8rem; color: #A78BFA; }
+    .nft-actions { display: flex; gap: 5px; }
+    .nft-action-btn {
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+    .nft-action-btn svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 1.8; }
+    .nft-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 10px;
+    }
+    .stars { color: #F59E0B; font-size: 0.8rem; letter-spacing: 1px; }
+    .bidders {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .bidder-avatars { display: flex; }
+    .bidder-av {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid white;
+      margin-left: -6px;
+      background: linear-gradient(135deg, #A78BFA, #7C3AED);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.55rem; font-weight: 700; color: white;
+      overflow: hidden;
+    }
+    .bidder-av:first-child { margin-left: 0; }
+    .bidder-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .bidder-count { font-size: 0.72rem; color: var(--text-secondary); font-weight: 500; }
+
+    /* ─── INVESTMENT STATS CARD ─── */
+    .inv-stats {}
+    .inv-body { display: flex; gap: 12px; }
+    .inv-list { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .inv-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .inv-row:hover { background: var(--purple-lighter); }
+    .inv-icon {
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .inv-icon svg { width: 16px; height: 16px; stroke: white; fill: none; stroke-width: 1.8; }
+    .inv-icon.orange { background: linear-gradient(135deg, #FBBF24, #F59E0B); }
+    .inv-icon.green { background: linear-gradient(135deg, #34D399, #10B981); }
+    .inv-icon.red { background: linear-gradient(135deg, #F87171, #EF4444); }
+    .inv-label { font-size: 0.7rem; color: var(--text-secondary); font-weight: 500; }
+    .inv-val { font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+    .inv-val.orange { color: var(--orange); }
+    .inv-val.green { color: var(--green); }
+    .inv-val.red { color: var(--red); }
+    .inv-chart-wrap { width: 90px; display: flex; align-items: flex-end; }
+    .inv-chart-wrap canvas { width: 100% !important; }
+
+    /* ─── MY CARDS ─── */
+    .my-cards {}
+    .wallet-card {
+      background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 50%, #4C1D95 100%);
+      border-radius: var(--radius);
+      padding: 18px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .wallet-card:hover { transform: scale(1.01); }
+    .wallet-card::before {
+      content: '';
+      position: absolute;
+      width: 140px; height: 140px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+      top: -40px; right: -30px;
+    }
+    .wallet-card::after {
+      content: '';
+      position: absolute;
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+      bottom: -20px; left: 30px;
+    }
+    .wallet-label { font-size: 0.7rem; font-weight: 500; opacity: 0.75; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .wallet-balance { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 14px; }
+    .wallet-profit-row { display: flex; align-items: center; justify-content: space-between; }
+    .wallet-profit-label { font-size: 0.68rem; opacity: 0.7; margin-bottom: 2px; }
+    .wallet-profit-val { font-size: 1rem; font-weight: 700; }
+    .profit-badge {
+      background: rgba(255,255,255,0.18);
+      border-radius: 20px;
+      padding: 3px 9px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #A7F3D0;
+    }
+    .card-dots {
+      display: flex; justify-content: center; gap: 6px;
+      margin-top: 12px;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #E5E7EB;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .dot.active { background: var(--purple); transform: scale(1.2); }
+
+    /* ─── NFTS OWNED ─── */
+    .nfts-owned {}
+    .nft-list { display: flex; flex-direction: column; gap: 6px; }
+    .nft-list-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .nft-list-item:hover { background: var(--bg); }
+    .nft-list-info { flex: 1; }
+    .nft-list-name { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    .nft-list-price { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 4px; }
+    .nft-list-chart { width: 60px; height: 30px; }
+    .change-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
+    .change-badge.pos { color: var(--green); background: var(--green-light); }
+    .change-badge.neg { color: var(--red); background: var(--red-light); }
+
+    /* ─── MY PORTFOLIO ─── */
+    .my-portfolio {}
+    .portfolio-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .portfolio-nav { display: flex; gap: 6px; }
+    .port-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      background: var(--card);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .port-btn:hover { background: var(--purple-lighter); border-color: var(--purple); }
+    .port-btn.active { background: var(--purple); border-color: var(--purple); }
+    .port-btn svg { width: 14px; height: 14px; stroke: var(--text-secondary); fill: none; stroke-width: 2; }
+    .port-btn.active svg { stroke: white; }
+    .portfolio-scroll {
+      display: flex; gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .portfolio-scroll::-webkit-scrollbar { height: 3px; }
+    .portfolio-scroll::-webkit-scrollbar-thumb { background: var(--purple-lighter); border-radius: 10px; }
+    .port-card {
+      flex-shrink: 0;
+      width: 160px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: pointer;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .port-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+    .port-card-img {
+      width: 100%; height: 90px;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, #ddd8f5 0%, #b8a9f5 100%);
+    }
+    .port-card-body { padding: 8px 10px; }
+    .port-card-name { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+    .port-card-price { font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+
+    /* ─── TOP PICKS ─── */
+    .top-picks {}
+    .pick-list { display: flex; flex-direction: column; gap: 4px; }
+    .pick-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .pick-item:hover { background: var(--bg); }
+    .pick-color { width: 4px; height: 36px; border-radius: 3px; flex-shrink: 0; }
+    .pick-info { flex: 1; }
+    .pick-name { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    .pick-usd { font-size: 0.7rem; color: var(--text-secondary); }
+    .pick-eth { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); text-align: right; white-space: nowrap; }
+    .pick-chevron { color: var(--text-muted); font-size: 0.9rem; flex-shrink: 0; }
+
+    /* ─── TOTAL DISTRIBUTIONS CHART ─── */
+    .distributions {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .dist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .dist-chart-wrap { position: relative; height: 140px; }
+
+    /* Tooltip custom */
+    .chart-tooltip {
+      background: var(--purple);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ETH diamond SVG inline */
+    .eth-diamond {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 1100px) {
+      .row-top { grid-template-columns: 1fr 1fr; }
+      .my-cards { grid-column: 1 / -1; max-width: 320px; }
+      .row-mid { grid-template-columns: 1fr 1fr; }
+      .top-picks { grid-column: 1 / -1; }
+    }
+    @media (max-width: 780px) {
+      .row-top, .row-mid { grid-template-columns: 1fr; }
+      .my-cards { max-width: 100%; }
+    }
+
+    /* Sparkline canvas */
+    canvas.sparkline { display: block; }
+
+    /* Scroll reveal animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card, .distributions { animation: fadeUp 0.4s ease both; }
+    .row-top .card:nth-child(1) { animation-delay: 0.05s; }
+    .row-top .card:nth-child(2) { animation-delay: 0.10s; }
+    .row-top .card:nth-child(3) { animation-delay: 0.15s; }
+    .row-mid .card:nth-child(1) { animation-delay: 0.20s; }
+    .row-mid .card:nth-child(2) { animation-delay: 0.25s; }
+    .row-mid .card:nth-child(3) { animation-delay: 0.30s; }
+    .distributions { animation-delay: 0.35s; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════ SIDEBAR ════════════════════════════════ -->
+<aside class="sidebar" role="navigation" aria-label="Main navigation">
+  <div class="sidebar-logo" title="PropChain">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  </div>
+
+  <nav class="sidebar-nav">
+    <!-- Dashboard -->
+    <div class="nav-item active" id="nav-dashboard" title="Dashboard" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+    </div>
+    <!-- Home -->
+    <div class="nav-item" id="nav-home" title="Properties" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <!-- Clock -->
+    <div class="nav-item" id="nav-history" title="History" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <!-- Briefcase -->
+    <div class="nav-item" id="nav-portfolio" title="Portfolio" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+    </div>
+    <!-- Calendar -->
+    <div class="nav-item" id="nav-calendar" title="Calendar" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <!-- Settings -->
+    <div class="nav-item" id="nav-settings" title="Settings" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </div>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="nav-item power" id="nav-power" title="Logout" role="button" tabindex="0">
+      <svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 11-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════ MAIN ════════════════════════════════ -->
+<div class="main">
+
+  <!-- HEADER -->
+  <header class="header">
+    <h1>Dashboard</h1>
+    <div class="header-right">
+      <button class="bell-btn" aria-label="Notifications" id="bell-btn">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="notif-dot"></span>
+      </button>
+      <div class="user-info" id="user-info" aria-label="User profile">
+        <div class="avatar">RR</div>
+        <span class="user-name">Rowena Ravenclaw</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content" id="main-content">
+
+    <!-- ── TOP ROW ── -->
+    <div class="row row-top">
+
+      <!-- 1. NFT Marketplace -->
+      <div class="card nft-marketplace" id="card-nft-marketplace">
+        <div class="card-header">
+          <span class="card-title">NFT Marketplace</span>
+          <button class="dots-btn" aria-label="More options">•••</button>
+        </div>
+        <div class="nft-img-wrap">
+          <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80&auto=format&fit=crop" alt="House Andromeda" loading="lazy" />
+          <div class="nft-badges">
+            <span class="badge">Top picks</span>
+            <span class="badge featured">Featured</span>
+          </div>
+          <div class="nft-overlay">
+            <div>
+              <div class="nft-name">House Andromeda</div>
+              <div class="nft-price-row">
+                <span class="eth-icon">♦</span>
+                <span>1.44 Ether</span>
+              </div>
+            </div>
+            <div class="nft-actions">
+              <div class="nft-action-btn" title="Share">
+                <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </div>
+              <div class="nft-action-btn" title="Save">
+                <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="nft-meta">
+          <div class="stars">★★★★★</div>
+          <div class="bidders">
+            <div class="bidder-avatars">
+              <div class="bidder-av"><img src="https://i.pravatar.cc/40?img=11" alt="Bidder 1" /></div>
+              <div class="bidder-av"><img src="https://i.pravatar.cc/40?img=22" alt="Bidder 2" /></div>
+              <div class="bidder-av"><img src="https://i.pravatar.cc/40?img=33" alt="Bidder 3" /></div>
+            </div>
+            <span class="bidder-count">(24 bidders)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Investment Stats -->
+      <div class="card inv-stats" id="card-inv-stats">
+        <div class="card-header">
+          <span class="card-title">Investment Stats</span>
+          <button class="dots-btn" aria-label="More options">•••</button>
+        </div>
+        <div class="inv-body">
+          <div class="inv-list">
+            <div class="inv-row">
+              <div class="inv-icon orange">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <div>
+                <div class="inv-label">Total Investment</div>
+                <div class="inv-val orange"><span class="eth-icon">♦</span> 0.56 Ether</div>
+              </div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-icon green">
+                <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div>
+                <div class="inv-label">Weekly Returns</div>
+                <div class="inv-val green"><span class="eth-icon">♦</span> 0.005 Ether</div>
+              </div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-icon red">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div>
+                <div class="inv-label">Expenses</div>
+                <div class="inv-val red"><span class="eth-icon">♦</span> 0.005 Ether</div>
+              </div>
+            </div>
+          </div>
+          <div class="inv-chart-wrap">
+            <canvas id="barChart" width="90" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. My Cards -->
+      <div class="card my-cards" id="card-my-cards">
+        <div class="card-header">
+          <span class="card-title">My Cards</span>
+          <button class="dots-btn" aria-label="More options">•••</button>
+        </div>
+        <div class="wallet-card">
+          <div class="wallet-label">Balance</div>
+          <div class="wallet-balance">$521,652</div>
+          <div class="wallet-profit-row">
+            <div>
+              <div class="wallet-profit-label">Monthly Profit</div>
+              <div class="wallet-profit-val">$14,225</div>
+            </div>
+            <span class="profit-badge">+10%</span>
+          </div>
+        </div>
+        <div class="card-dots">
+          <div class="dot active" id="dot-1"></div>
+          <div class="dot" id="dot-2"></div>
+          <div class="dot" id="dot-3"></div>
+        </div>
+      </div>
+
+    </div><!-- /row-top -->
+
+    <!-- ── MIDDLE ROW ── -->
+    <div class="row row-mid">
+
+      <!-- 1. NFTs Owned -->
+      <div class="card nfts-owned" id="card-nfts-owned">
+        <div class="card-header">
+          <span class="card-title">NFTs owned</span>
+          <button class="dots-btn" aria-label="More options">•••</button>
+        </div>
+        <div class="nft-list" id="nft-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- 2. My Portfolio -->
+      <div class="card my-portfolio" id="card-my-portfolio">
+        <div class="portfolio-header">
+          <span class="card-title">My Portfolio</span>
+          <div class="portfolio-nav">
+            <div class="port-btn" id="port-prev" aria-label="Previous">
+              <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <div class="port-btn active" id="port-next" aria-label="Next">
+              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="portfolio-scroll" id="portfolio-scroll">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- 3. Top Picks -->
+      <div class="card top-picks" id="card-top-picks">
+        <div class="card-header">
+          <span class="card-title">Top Picks</span>
+          <button class="dots-btn" aria-label="More options">•••</button>
+        </div>
+        <div class="pick-list" id="pick-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div><!-- /row-mid -->
+
+    <!-- ── TOTAL DISTRIBUTIONS ── -->
+    <div class="distributions" id="card-distributions">
+      <div class="dist-header">
+        <span class="card-title">Total Distributions</span>
+        <button class="dots-btn" aria-label="More options">•••</button>
+      </div>
+      <div class="dist-chart-wrap">
+        <canvas id="areaChart"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const nftsOwned = [
+  { name: 'Roma Avenue',   price: '0.91 Ether', change: '+10%', pos: true,  spark: [12,14,11,15,13,17,16] },
+  { name: 'Thorian Park',  price: '0.89 Ether', change: '+19%', pos: true,  spark: [10,12,11,16,14,18,19] },
+  { name: 'Linda Mansion', price: '1.1 Ether',  change: '-17%', pos: false, spark: [18,16,14,12,13,11,10] },
+  { name: 'Villa Mary',    price: '0.71 Ether', change: '+32%', pos: true,  spark: [9,11,10,14,16,19,22]  },
+];
+
+const portfolioItems = [
+  { name: 'Mandragora Mansion', price: '0.005 Ether', img: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=300&q=60&auto=format&fit=crop' },
+  { name: 'Halbert Avenue',     price: '0.076 Ether', img: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=300&q=60&auto=format&fit=crop' },
+  { name: 'Pom Villas',         price: '0.12 Ether',  img: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300&q=60&auto=format&fit=crop' },
+  { name: 'Elara Heights',      price: '0.095 Ether', img: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=300&q=60&auto=format&fit=crop' },
+];
+
+const topPicks = [
+  { name: 'Roma Avenue',  usd: '$400,000', eth: '0.0000345 Ether', color: '#EF4444' },
+  { name: 'Atlas Shack',  usd: '$500,000', eth: '0.0000678 Ether', color: '#F59E0B' },
+  { name: 'Germanrin',    usd: '$786,000', eth: '0.0000887 Ether', color: '#10B981' },
+  { name: 'Heavens',      usd: '$667,000', eth: '0.0000761 Ether', color: '#F59E0B' },
+  { name: 'Heretho',      usd: '$348,000', eth: '0.0000302 Ether', color: '#EF4444' },
+];
+
+// ─── RENDER NFTs OWNED ───────────────────────────────────────────────────────
+const nftList = document.getElementById('nft-list');
+nftsOwned.forEach((item, idx) => {
+  const el = document.createElement('div');
+  el.className = 'nft-list-item';
+  el.innerHTML = `
+    <div class="nft-list-info">
+      <div class="nft-list-name">${item.name}</div>
+      <div class="nft-list-price"><span class="eth-icon">♦</span> ${item.price}</div>
+    </div>
+    <canvas class="sparkline nft-list-chart" id="spark-${idx}" width="60" height="30"></canvas>
+    <span class="change-badge ${item.pos ? 'pos' : 'neg'}">${item.change}</span>
+  `;
+  nftList.appendChild(el);
+  // Draw sparkline after append
+  requestAnimationFrame(() => drawSparkline(`spark-${idx}`, item.spark, item.pos));
+});
+
+function drawSparkline(id, data, pos) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const color = pos ? '#10B981' : '#EF4444';
+  ctx.clearRect(0, 0, w, h);
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+// ─── RENDER PORTFOLIO ────────────────────────────────────────────────────────
+const portfolioScroll = document.getElementById('portfolio-scroll');
+portfolioItems.forEach(item => {
+  const el = document.createElement('div');
+  el.className = 'port-card';
+  el.innerHTML = `
+    <img class="port-card-img" src="${item.img}" alt="${item.name}" loading="lazy" />
+    <div class="port-card-body">
+      <div class="port-card-name">${item.name}</div>
+      <div class="port-card-price"><span class="eth-icon" style="color:var(--text-muted)">♦</span> ${item.price}</div>
+    </div>
+  `;
+  portfolioScroll.appendChild(el);
+});
+
+// Portfolio scroll navigation
+document.getElementById('port-next').addEventListener('click', () => {
+  portfolioScroll.scrollBy({ left: 180, behavior: 'smooth' });
+});
+document.getElementById('port-prev').addEventListener('click', () => {
+  portfolioScroll.scrollBy({ left: -180, behavior: 'smooth' });
+});
+
+// ─── RENDER TOP PICKS ────────────────────────────────────────────────────────
+const pickList = document.getElementById('pick-list');
+topPicks.forEach(item => {
+  const el = document.createElement('div');
+  el.className = 'pick-item';
+  el.innerHTML = `
+    <div class="pick-color" style="background:${item.color}"></div>
+    <div class="pick-info">
+      <div class="pick-name">${item.name}</div>
+      <div class="pick-usd">${item.usd}</div>
+    </div>
+    <div class="pick-eth">${item.eth}</div>
+    <span class="pick-chevron">›</span>
+  `;
+  pickList.appendChild(el);
+});
+
+// ─── BAR CHART (Investment Stats) ────────────────────────────────────────────
+(function() {
+  const ctx = document.getElementById('barChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['', '', '', '', '', ''],
+      datasets: [
+        {
+          data: [60, 80, 50, 90, 70, 85],
+          backgroundColor: ['#10B981','#7C3AED','#F59E0B','#10B981','#7C3AED','#EF4444'],
+          borderRadius: 5,
+          borderSkipped: false,
+          barThickness: 10,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { display: false },
+        y: {
+          display: true,
+          grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+          ticks: {
+            font: { size: 8 }, color: '#9CA3AF',
+            callback: v => v === 0 ? 'Min' : v === 100 ? 'Max' : '',
+            maxTicksLimit: 3,
+          },
+          min: 0, max: 100,
+        }
+      }
+    }
+  });
+})();
+
+// ─── AREA CHART (Total Distributions) ────────────────────────────────────────
+(function() {
+  const ctx = document.getElementById('areaChart').getContext('2d');
+  const labels = ['0', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const data   = [160, 200, 175, 210, 180, 240, 210, 230];
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 140);
+  gradient.addColorStop(0, 'rgba(124,58,237,0.28)');
+  gradient.addColorStop(1, 'rgba(124,58,237,0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        fill: true,
+        backgroundColor: gradient,
+        borderColor: '#7C3AED',
+        borderWidth: 2.5,
+        tension: 0.45,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#7C3AED',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#7C3AED',
+          titleColor: 'rgba(255,255,255,0.7)',
+          bodyColor: '#fff',
+          bodyFont: { weight: '700', size: 13 },
+          padding: 10,
+          borderRadius: 10,
+          displayColors: false,
+          callbacks: {
+            title: () => '',
+            label: ctx => `$${ctx.parsed.y}`,
+          },
+          caretSize: 6,
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false, drawBorder: false },
+          ticks: { font: { size: 11 }, color: '#9CA3AF' },
+        },
+        y: {
+          min: 100, max: 300,
+          grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+          ticks: {
+            stepSize: 100,
+            font: { size: 11 }, color: '#9CA3AF',
+            callback: v => v,
+          }
+        }
+      }
+    }
+  });
+})();
+
+// ─── SIDEBAR NAVIGATION ───────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item:not(.power)').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    this.classList.add('active');
+  });
+  item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') item.click(); });
+});
+
+// ─── CARD DOTS ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.dot').forEach((dot, i) => {
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

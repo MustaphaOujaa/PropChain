@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { usePreferences } from "@/context/PreferencesContext";
 
 const datasets: Record<string, { name: string; value: number }[]> = {
   "1W": [
@@ -28,7 +29,7 @@ const tabs = ["1W", "1M", "3M", "1Y"];
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#8B5CF6] text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-md">
+      <div className="bg-[#8A74F9] text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-md">
         ${payload[0].value}
       </div>
     );
@@ -37,12 +38,13 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function TotalDistributionsChart() {
+  const { t } = usePreferences();
   const [activeTab, setActiveTab] = useState("1W");
 
   return (
     <div className="w-full h-full flex flex-col gap-5">
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-xl font-bold text-slate-800 tracking-tight">Total Distributions</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight transition-colors">{t("total_distributions" as any)}</h2>
         {/* Time range tabs */}
         <div className="flex gap-1 bg-slate-100 rounded-full p-1">
           {tabs.map((tab) => (
@@ -51,8 +53,8 @@ export default function TotalDistributionsChart() {
               onClick={() => setActiveTab(tab)}
               className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 ${
                 activeTab === tab
-                  ? "bg-[#8B5CF6] text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-[#8A74F9] text-white shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               }`}
             >
               {tab}
@@ -61,13 +63,13 @@ export default function TotalDistributionsChart() {
         </div>
       </div>
 
-      <div className="bg-white rounded-[32px] p-4 sm:p-6 shadow-sm flex-1 flex flex-col w-full min-h-[220px] sm:min-h-[250px] relative">
+      <div className="bg-white dark:bg-slate-800 rounded-[32px] p-4 sm:p-6 shadow-sm flex-1 flex flex-col w-full min-h-[220px] sm:min-h-[250px] relative border border-transparent dark:border-slate-700/50 transition-colors duration-300">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={datasets[activeTab]} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.15}/>
-                <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#8A74F9" stopOpacity={0.15}/>
+                <stop offset="95%" stopColor="#8A74F9" stopOpacity={0}/>
               </linearGradient>
             </defs>
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} dy={10} />
@@ -76,11 +78,11 @@ export default function TotalDistributionsChart() {
             <Area
               type="monotone"
               dataKey="value"
-              stroke="#8B5CF6"
+              stroke="#8A74F9"
               strokeWidth={3.5}
               fillOpacity={1}
               fill="url(#colorValue)"
-              activeDot={{ r: 6, fill: "#8B5CF6", stroke: "#fff", strokeWidth: 2 }}
+              activeDot={{ r: 6, fill: "#8A74F9", stroke: "#fff", strokeWidth: 2 }}
               animationDuration={500}
             />
           </AreaChart>

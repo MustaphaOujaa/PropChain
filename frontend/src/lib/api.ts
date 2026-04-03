@@ -70,8 +70,36 @@ export interface PortfolioData {
 export const userApi = {
   getPortfolio: () => api.get<PortfolioData>('/user/portfolio'),
   purchase: (propertyId: string) => api.post('/user/purchase', { propertyId }),
+  deposit: (amount: number) => api.post('/user/deposit', { amount }),
   updateProfile: (data: { name?: string; avatarUrl?: string }) => api.put('/user/profile', data),
   changePassword: (data: { currentPassword: string; newPassword: string }) => api.put('/user/password', data),
+};
+
+// ── Dashboard ─────────────────────────────────────────────
+export interface DashboardData {
+  stats: {
+    totalProperties: number;
+    marketProperties: number;
+    ownedProperties: number;
+    totalValueUSD: number;
+    avgROI: number;
+    totalInvestmentETH: number;
+    weeklyReturnsETH: number;
+    expensesETH: number;
+  };
+  topPicks: Property[];
+  distributions: { label: string; value: number }[];
+  profile: {
+    name: string;
+    email: string;
+    walletBalance: number;
+    monthlyProfit: number;
+    ownedCount: number;
+  } | null;
+}
+
+export const dashboardApi = {
+  get: () => api.get<DashboardData>('/dashboard'),
 };
 
 export default api;

@@ -105,7 +105,7 @@ export default function LoginPage() {
       {/* ── Left Panel (decorative, visible on lg+) ─────────────────────── */}
       <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] relative overflow-hidden flex-col">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#6D28D9] via-[#8B5CF6] to-[#A78BFA]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#6D28D9] via-[#8A74F9] to-[#A78BFA]" />
 
         {/* Floating orbs */}
         <div className="absolute top-[-80px] left-[-80px] w-96 h-96 rounded-full bg-white/10 blur-3xl" />
@@ -192,7 +192,7 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-[#8B5CF6] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-[#8A74F9] flex items-center justify-center">
               <EtherIcon className="w-4 h-4 text-white" />
             </div>
             <span className="text-slate-800 font-bold text-lg tracking-tight">PropChain</span>
@@ -279,7 +279,7 @@ export default function LoginPage() {
             <div className="flex justify-end -mt-2">
               <Link
                 href="/forgot-password"
-                className="text-xs text-[#8B5CF6] font-semibold hover:text-[#7C3AED] transition-colors"
+                className="text-xs text-[#8A74F9] font-semibold hover:text-[#7864dd] transition-colors"
               >
                 Forgot password?
               </Link>
@@ -300,7 +300,7 @@ export default function LoginPage() {
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="text-[#8B5CF6] font-semibold hover:text-[#7C3AED] transition-colors"
+              className="text-[#8A74F9] font-semibold hover:text-[#7864dd] transition-colors"
             >
               Create one free
             </Link>

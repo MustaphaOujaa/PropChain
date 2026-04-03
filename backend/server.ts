@@ -1,24 +1,54 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import connectDB from './config/db';
 import Property from './models/Property';
 
 import authRoutes from './routes/authRoutes';
 import propertyRoutes from './routes/propertyRoutes';
 import userRoutes from './routes/userRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 dotenv.config();
 connectDB();
+
+// ── Auto-seed on startup if DB is empty ───────────────────────────────────────
+async function autoSeedIfEmpty() {
+  let retries = 0;
+  while (retries < 15) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        await new Promise(r => setTimeout(r, 500));
+        retries++;
+        continue;
+      }
+      const count = await Property.countDocuments();
+      if (count < SEED_PROPERTIES.length) {
+        await Property.deleteMany({});
+        await Property.insertMany(SEED_PROPERTIES);
+        console.log(`✅ Auto-seeded ${SEED_PROPERTIES.length} properties into MongoDB`);
+      } else {
+        console.log(`ℹ️  DB already has ${count} properties — skipping seed`);
+      }
+      return;
+    } catch {
+      retries++;
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+  console.error('❌ Auto-seed failed after retries');
+}
 
 const app = express();
 
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth',       authRoutes);
 app.use('/api/properties', propertyRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/user',       userRoutes);
+app.use('/api/dashboard',  dashboardRoutes);
 
 app.get('/', (_req, res) => res.json({ message: 'PropChain API running ✓', version: '2.0' }));
 
@@ -42,14 +72,14 @@ const SEED_PROPERTIES = [
     title: 'Atlas Penthouse', category: 'Penthouse', location: 'New York, NY',
     priceUSD: 2100000, priceETH: 656.25, roi: 11.8, beds: 4, baths: 4, sqft: 3800,
     status: 'Market', isTopPick: true,
-    imageUrl: 'https://images.unsplash.com/photo-1628745277895-3d3a1b6df47b?w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1515263487990-61b07816b324?w=800&auto=format&fit=crop',
     description: 'Sky-high Manhattan penthouse with 360° city views, private rooftop, and concierge service.',
   },
   {
     title: 'Germanrin Heights', category: 'Villa', location: 'Dallas, TX',
     priceUSD: 640000, priceETH: 200.0, roi: 15.3, beds: 4, baths: 3, sqft: 3500,
     status: 'Market', isTopPick: true,
-    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&auto=format&fit=crop',
     description: 'Modern Texas villa with open-plan living, infinity pool, and private tennis court.',
   },
   {
@@ -110,15 +140,18 @@ const SEED_PROPERTIES = [
   },
 ];
 
-app.post('/api/seed', async (_req, res) => {
+app.post('/api/seed', async (req, res) => {
   try {
+    const force = req.query.force === 'true';
     const existing = await Property.countDocuments();
-    if (existing >= SEED_PROPERTIES.length) {
-      return res.json({ message: 'Already seeded', count: existing });
+    
+    if (existing >= SEED_PROPERTIES.length && !force) {
+      return res.json({ message: 'Already seeded (use ?force=true to override)', count: existing });
     }
+    
     await Property.deleteMany({});
     await Property.insertMany(SEED_PROPERTIES);
-    res.json({ message: `Seeded ${SEED_PROPERTIES.length} properties successfully!` });
+    res.json({ message: `Seeded ${SEED_PROPERTIES.length} properties successfully!`, forced: force });
   } catch (err) {
     res.status(500).json({ error: 'Failed to seed', details: String(err) });
   }
@@ -128,4 +161,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`\n🚀 PropChain API running on http://localhost:${PORT}`);
   console.log(`   Seed the DB: POST http://localhost:${PORT}/api/seed\n`);
+  autoSeedIfEmpty();
 });

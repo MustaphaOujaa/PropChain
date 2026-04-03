@@ -99,3 +99,21 @@ export const changePassword = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error changing password' });
   }
 };
+
+export const depositFunds = async (req: Request, res: Response) => {
+  try {
+    const { amount } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ message: 'Invalid amount' });
+
+    const user = await User.findById((req as any).user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.walletBalance += amount;
+    user.activityLogs.push({ action: `Deposited $${amount.toLocaleString()}`, amount } as any);
+    await user.save();
+
+    res.json({ message: `Successfully deposited $${amount.toLocaleString()}`, walletBalance: user.walletBalance });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error processing deposit' });
+  }
+};

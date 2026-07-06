@@ -69,7 +69,14 @@ export default function ActivityHeatmap() {
           <h3 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Activity Graph</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your recent contributions</p>
         </div>
-        <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-xl leading-none font-bold pb-2 tracking-widest">...</button>
+        <div className="flex items-center gap-3">
+          <select className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer">
+            <option>2026</option>
+            <option>2025</option>
+            <option>2024</option>
+          </select>
+          <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-xl leading-none font-bold pb-2 tracking-widest">...</button>
+        </div>
       </div>
 
       <div className="relative z-10 w-full overflow-x-auto pb-4 scrollbar-hide">

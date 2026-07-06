@@ -6,6 +6,7 @@ import InvestmentStats from "@/components/dashboard/InvestmentStats";
 import NFTsOwnedList from "@/components/dashboard/NFTsOwnedList";
 import MyPortfolio from "@/components/dashboard/MyPortfolio";
 import TotalDistributionsChart from "@/components/dashboard/TotalDistributionsChart";
+import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
 import TopPicks from "@/components/right-sidebar/TopPicks";
 import CreditCardUI from "@/components/dashboard/CreditCardUI";
 import { motion, Variants } from "framer-motion";
@@ -40,6 +41,7 @@ export default function Home() {
               <div className="flex flex-col gap-8 lg:gap-10">
                 <motion.div variants={itemVars}><NFTMarketplaceCard /></motion.div>
                 <motion.div variants={itemVars}><NFTsOwnedList /></motion.div>
+                <motion.div variants={itemVars}><ActivityHeatmap /></motion.div>
               </div>
 
               {/* Right Column */}

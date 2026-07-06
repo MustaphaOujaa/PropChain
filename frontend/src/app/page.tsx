@@ -14,7 +14,7 @@ import { usePreferences } from "@/context/PreferencesContext";
 
 const containerVars: Variants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.15 } }
+  show: { opacity: 1, transition: { staggerChildren: 0.2 } }
 };
 
 const itemVars: Variants = {
